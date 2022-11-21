@@ -2,9 +2,9 @@
 package smartfarm;
 
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.util.ArrayList;
+
+import java.util.Iterator;
 import java.util.Scanner;
 
 
@@ -16,136 +16,89 @@ import java.util.Scanner;
 
  class SmartFarm {
    
- 
-   public SmartFarm() {
-       
-       statement = database.getStatement();
-   }   
+   ArrayList<Cow> cowList = new ArrayList(); 
+   Cow firstCow;
+   Cow cow;
+   int counter = 0;
      
-   ResultSet result;
-   Statement statement;
-   Database database = new Database("connect");  
+   
+   public void addFirstCow(Cow firstCow) {
+       
+       this.firstCow = firstCow;
+       cowList.add(firstCow);
+    }
    
    
+    public void addnewCow(Cow cow) {
+   
+       this.cow = cow;
+       cowList.add(cow);
+   }
+           
+    
        
     public void start() {
-        
-        database.CreateTables();  //*Uncomment this function to clear the database if needed*      
        
-        statement = database.getStatement();
         Scanner inputCowDetails = new Scanner(System.in);
-        String cowName, calfName; 
-       
-        String matchingCowID, matchingCowParentID, cowID, calfID;
+        String cowName, cowID, calfName, calfID;
+        Cow matchingCow;
         
+        //Determine if the farm has any cows in it
+        if (!cowList.isEmpty()) {
         
-                 //Determine if the farm has any cows in it
-                              
-                  try {
+         // if there are any cows in the farm, determine the first cow of the farm
+               System.out.print("Enter Cow ID: ");
+               cowID = inputCowDetails.nextLine();
+               
+             
+              
+             for (Iterator<Cow> iterator = cowList.iterator(); iterator.hasNext(); ) {
+                     
+                        matchingCow = iterator.next();
+                   
                         
-                        result = statement.executeQuery("SELECT COWTABLE.COW_ID, COWTABLE.COW_NAME, BIRTHTABLE.PARENT_ID, BIRTHTABLE.PARENT_NAME," +
-                        "BIRTHTABLE.CALF_ID, BIRTHTABLE.CALF_NAME " +
-                        "FROM COWTABLE, BIRTHTABLE WHERE COWTABLE.ID = BIRTHTABLE.COW_ID");
-                        
-                        while (result.next()) {
+                        if (matchingCow.getID().equals(cowID) && matchingCow.getID().equals(firstCow.getID())) {
                             
-                                                      
-                            matchingCowID = result.getString("COW_ID");
-                            matchingCowParentID = result.getString("PARENT_ID");
-                                       
-                            // if there are any cows in the farm, determine the first cow of the farm
-                            System.out.print("Enter Cow ID: ");
-                            cowID = inputCowDetails.nextLine();
-							   
-                            if (cowID.equals(matchingCowID) && matchingCowParentID == null) {
                             
-                                cowName = result.getString("COW_Name");
-                                System.out.print("Enter the ID of the calf which has been born to " + cowName + ": ");
-                                calfID = inputCowDetails.nextLine();
-                                System.out.print("Enter the NAME of the calf which has been born to " + cowName + ": ");
-                                calfName = inputCowDetails.nextLine(); 
-
-                             try {
-                               
-                             
-                               
-                               statement.executeUpdate("INSERT INTO COWTABLE (COW_ID, COW_NAME) "
-                                       + "values('"+ calfID +"', '" + calfName + "')"); 
-                               
-                               statement.executeUpdate("INSERT INTO BIRTHTABLE (COW_ID, PARENT_ID, PARENT_NAME, CALF_ID, CALF_NAME) "
-                                       + "values((SELECT ID FROM COWTABLE WHERE COW_ID = '" + cowID +"'), null, null, '" + calfID + "', '" + calfName + "')");
-                               
-                               System.out.println("Succ1esfully added " + cowName + "'s newborn cow ID: " + calfID + " NAME: " + calfName + " to the farm");
+                            cowName = matchingCow.getName();
+                            System.out.print("Enter the ID of the calf which has been born to " + cowName + ": ");
+                            calfID = inputCowDetails.nextLine();
+                            System.out.print("Enter the NAME of the calf which has been born to " + cowName + ": ");
+                            calfName = inputCowDetails.nextLine(); 
                            
-                               
-                           } catch (SQLException ex) {
-                               
-                               System.out.println(ex);
-                           }
-                          
+                            cow = new Cow(cowID, cowName, calfID, calfName);
+                            
+                            addnewCow(cow);
+                            counter++;
                             System.out.println("Succesfully added the first cow's newborn calf, ID: " + calfID + " NAME: " + calfName + " to the list");
-                           
+                            firstCow.giveBirth(cowID, calfID, calfName);
                             nextStage();
                            
-                      }  else {    ResultSet result2;
-                                
-                                    try {
-                                        String removedCowName;
-                                        String removedCowID;
-                                        result2 = statement.executeQuery("SELECT COWTABLE.COW_ID, COWTABLE.COW_NAME," +
-                                        "BIRTHTABLE.CALF_ID, BIRTHTABLE.CALF_NAME " +
-                                        "FROM COWTABLE, BIRTHTABLE WHERE COWTABLE.COW_ID = BIRTHTABLE.CALF_ID");
-                                        
-                                       if(result2.next()) {
-                                           
-                                           
-                                           removedCowName = result2.getString("COW_NAME");
-                                           removedCowID = result2.getString("COW_ID");
-                                           System.out.println("COW_NAME " + removedCowName);
-                                           if (cowID.equals(removedCowID) && !removedCowName.equals("removed from farm"))  {
-                                                                                        
-                                                 cowName = removedCowName;
-                                                 System.out.print("Enter the ID of the calf which has been born to " + cowName + ": ");
-                                                 calfID = inputCowDetails.nextLine();
-                                                 System.out.print("Enter the NAME of the calf which has been born to " + cowName + ": ");
-                                                 calfName = inputCowDetails.nextLine(); 
-
-                                                statement.executeUpdate("INSERT INTO COWTABLE (COW_ID, COW_NAME) "
-                                                + "values('"+ calfID +"', '" + calfName + "')"); 
-                               
-                                                statement.executeUpdate("INSERT INTO BIRTHTABLE (COW_ID, PARENT_ID, PARENT_NAME, CALF_ID, CALF_NAME) "
-                                                + "values( (SELECT ID FROM COWTABLE WHERE COW_ID = '" + cowID +"'), "
-                                                + "(SELECT CAST(CAST(b.COW_ID AS CHAR(48)) AS VARCHAR(10)) FROM BIRTHTABLE b WHERE b.COW_ID IN (SELECT ID FROM COWTABLE) AND b.CALF_ID = '" + cowID +"'),"
-                                                + "(SELECT COW_NAME FROM COWTABLE c WHERE c.ID IN (SELECT COW_ID FROM BIRTHTABLE) FETCH FIRST 1 ROWS ONLY),'" + calfID + "', '" + calfName + "')");
-                               
-                                                
-                               
-                                                System.out.println("Succesfully added " + cowName + "'s newborn cow ID: " + calfID + " NAME: " + calfName + " to the farm");
-
-                                                                                     
-                                            } else if (removedCowName.equals("removed from farm")) {
-                                                
-                                                     System.out.println("COW ID: " + removedCowID + " " + removedCowName + " therefore it cannot produce any more calves.");
-                                                
-                                                }
-                                       }
-                                 
-                                    } catch(SQLException e) {
-                                        
-                                       System.out.println("1 " +  e);
-                                    }
-                                   
-
+                        } 
+                        
+                        else if (matchingCow.getID().equals(cowID))  {
+                            
+                            
+                            cowName = matchingCow.getName();
+                            System.out.print("Enter the ID of the calf which has been born to " + cowName + ": ");
+                            calfID = inputCowDetails.nextLine();
+                            System.out.print("Enter the NAME of the calf which has been born to " + cowName + ": ");
+                            calfName = inputCowDetails.nextLine(); 
+                            
+                            cow = new Cow(cowID, cowName, calfID, calfName);
+                            addnewCow(cow);
+                            counter++;
+                            System.out.println("Succesfully added " + cowName + "'s newborn cow ID: " + calfID + " NAME: " + calfName + " to the list");
+                            cow.giveBirth(cowID, calfID, calfName);
                             nextStage();
-                       
-                         }
+                         } 
                 
                    } 
         
-         if (!result.next()) {
+        } else {
                           // If the cow hasn't got parent ID, it means it is the first cow in the farm, without parents 
                            System.out.println("There are no cows in the farm, adding the first cow");
-                           
+
                            System.out.print("Enter Cow ID: ");
                            cowID = inputCowDetails.nextLine();
                            System.out.print("Enter Cow Name: ");
@@ -155,35 +108,17 @@ import java.util.Scanner;
                            System.out.print("Enter the NAME of the calf which has been born to " + cowName + ": ");
                            calfName = inputCowDetails.nextLine(); 
 
-                           try {
-                               
-                              statement.executeUpdate("INSERT INTO COWTABLE (COW_ID, COW_NAME) "
-                                       + "values('"+ cowID +"', '" + cowName + "')"); 
-                               
-                               
-                              statement.executeUpdate("INSERT INTO COWTABLE (COW_ID, COW_NAME) "
-                                       + "values('"+ calfID +"', '" + calfName + "')"); 
-                               
-                              statement.executeUpdate("INSERT INTO BIRTHTABLE (COW_ID, PARENT_ID, PARENT_NAME, CALF_ID, CALF_NAME) "
-                                       + "values((SELECT ID FROM COWTABLE WHERE COW_ID = '" + cowID +"'), null, null, '" + calfID + "', '" + calfName + "')");
-                               
-                               System.out.println("Succesfully added " + cowName + "'s newborn cow ID: " + calfID + " NAME: " + calfName + " to the farm");
+                           firstCow = new Cow(cowID, cowName);
+                           addFirstCow(firstCow);
+                           counter++;
                            
-                               
-                           } catch (SQLException ex) {
-                               
-                               System.out.println("Last exception" + ex);
-                           }
-                           
-                        
+                           cow = new Cow(cowID, cowName, calfID, calfName);
+                           addnewCow(cow);
+                           System.out.println("Succesfully added " + cowName + "'s newborn cow ID: " + calfID + " NAME: " + calfName + " to the farm");
+                           firstCow.giveBirth(cowID, calfID, calfName);
                            nextStage();
-                } 
-                           
-                           
-    } catch (SQLException e) {
-                                   
-            System.out.println(e);
-    }
+      
+        }     
        
 }   
  
@@ -199,71 +134,78 @@ import java.util.Scanner;
         String userInput;
         
         System.out.println("\nTo continue, type one of the options below: \n"
-                         + "1 Add cows\n"
+                         + "1 Add more cows\n"
                          + "2 Remove a cow from the farm\n"
                          + "3 Print entire farm data\n"
                          + "4 Exit\n");
         System.out.print("Enter your choice: ");
         userInput = inputChoice.nextLine();
         
+        try {
+            
+            switch (Integer.parseInt(userInput)){
         
-            if (userInput.equals("1")) {
-                
-                start();
-                
-            } else if (userInput.equals("2")) {
-                
-                endLifeSpan();
-                
-            } else if (userInput.equals("3")){
-                
-                printFarmData(); 
-                
-            } else if (userInput.equals("4")){
-                
-                System.exit(0);
-                
-            } else {
-                
-                System.out.println("Please check your entry and try again");
-                nextStage();
-            }
-  }
+            case 1:
+              start();
+              break; 
+            case 2:
         
- 
+              endLifeSpan();
+              break;
+            case 3:
+                
+              printFarmData();  
+              break;  
+            case 4:  
+               
+              System.exit(0);
+              break;
+    }
+            
+            
+        } catch (Throwable ex) {
+            
+            System.out.println("Please check your entry and try again");
+            nextStage();
+        }
+      
+        
+  } 
     
     void endLifeSpan() {
         
-        String cowName;
         System.out.print("\033[H\033[2J");  
         System.out.flush();  
         System.out.println("\n");
         
         Scanner inputChoice = new Scanner(System.in);
-        String cowID;
+        String removeCowID;
         System.out.println("\nEnter the ID of the cow to be removed from the farm's database: \n");
-        cowID = inputChoice.nextLine();
+        removeCowID = inputChoice.nextLine();
         System.out.println("Farm's cow list before the removal");
-        
-        try {
-            
-            result = statement.executeQuery("SELECT COW_NAME FROM COWTABLE WHERE COW_ID = '" + cowID + "'");
-            
-            if (result.next()) {
-                
-                cowName = result.getString("COW_NAME");
-                
-                statement.executeUpdate("UPDATE COWTABLE SET COW_NAME = '"
-                + "removed from farm' WHERE COW_ID = '" + cowID + "'");
-                System.out.println("COW with the ID: " + cowID + " has been removed from the farm");
-            }
-          
-        
-        } catch (SQLException e) {
-            
-            System.out.println(e);
+        for (Cow cow : cowList ) {
+
+            System.out.println("Cow ID: " + cow.getID() +  " Cow Name: " + cow.getName());
+
         }
-     
+        
+        for (Cow cow : cowList){
+            
+            
+            if (cow.getID().equals(removeCowID)) {
+                
+                cowList.remove(cow);
+                cow.removed(true);
+                break;
+            }
+            
+        }
+       System.out.println("\nFarm's cow list after the removal "); 
+      for (Cow cow : cowList ) {
+
+            System.out.println("Cow ID: " + cow.getID() +  " Cow Name: " + cow.getName());
+
+        }
       nextStage();  
     }
     
@@ -274,25 +216,17 @@ import java.util.Scanner;
         System.out.flush();  
         System.out.println("\n\n\n");
         
-                      
-          try {
-                                   
-                result = statement.executeQuery("SELECT COWTABLE.COW_ID, COWTABLE.COW_NAME, " +
-                "BIRTHTABLE.CALF_ID, BIRTHTABLE.CALF_NAME, BIRTHTABLE.PARENT_ID " +
-                "FROM COWTABLE, BIRTHTABLE WHERE COWTABLE.ID = BIRTHTABLE.COW_ID");
-                               
-                    while (result.next()) {
-                                       
-                         System.out.println(result.getString("COW_ID") + ", " + result.getString("COW_NAME" ) + " has given birth to " 
-                         + "ID: " + result.getString("CALF_ID") + " NAME: "  + result.getString("CALF_NAME"));
-                               
-                }
-                               
-            } catch (SQLException ex1) {
-                                   
-                      System.out.println(ex1);
-            }                     
-              
+         for (Cow cow : cowList) {
+           
+           System.out.println("Cow ID: " + cow.getID() +  " Cow Name: " + cow.getName() + " ");
+           
+       }
+         
+       for (Cow cow : cowList)   {
+           
+           cow.retrieveCalves();
+       }
+        
         nextStage();
        
     }
@@ -306,11 +240,13 @@ import java.util.Scanner;
        SmartFarm farm = new SmartFarm();
        // Clear the screen
        System.out.print("\033[H\033[2J");  
-       System.out.flush(); 
-       
-       
-       farm.nextStage();
- 
+       System.out.flush();  
+       farm.start();
+        
+        
+         
+        
+        
         
     }
     
